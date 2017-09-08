@@ -9,8 +9,6 @@ android {
         applicationId "com.stasmobstudios.payconiqtest"
         minSdkVersion 16
         targetSdkVersion 25
-        versionCode 3
-        versionName "0.3"
         versionCode 4
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
