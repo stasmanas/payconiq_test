@@ -1,4 +1,6 @@
-package com.stasmobstudios.payconiqtest.model;
+package com.stasmobstudios.payconiqtest.util;
+
+import com.stasmobstudios.payconiqtest.model.Repository;
 
 import java.util.List;
 

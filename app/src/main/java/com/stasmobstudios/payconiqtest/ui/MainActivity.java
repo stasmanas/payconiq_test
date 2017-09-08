@@ -6,24 +6,17 @@ import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.View;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.stasmobstudios.payconiqtest.R;
-import com.stasmobstudios.payconiqtest.model.GithubRepoService;
 import com.stasmobstudios.payconiqtest.model.Repository;
+import com.stasmobstudios.payconiqtest.util.LocalStorageUtil;
+import com.stasmobstudios.payconiqtest.util.WSCalls;
 
 import java.util.List;
 
-import io.realm.Realm;
-import io.realm.RealmResults;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
+import butterknife.BindView;
+import butterknife.ButterKnife;
 
 /**
  * Created by Stanislovas Mickus on 07/09/2017.
@@ -32,35 +25,42 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class MainActivity extends AppCompatActivity {
     private static String TAG = MainActivity.class.getSimpleName();
 
+    @BindView(R.id.rv_resource_list)
     RecyclerView rvRepositoryList;
+    @BindView(R.id.ns_content)
+    NestedScrollView nsContent;
+    @BindView(R.id.toolbar)
+    Toolbar toolbar;
+    private BaseAdapter<Repository> repositoryListAdapter;
+
+    // Paged scroll variables
     protected boolean isLastPage = false;
     protected boolean isLoading = false;
     protected int currentPage = 1;
     public static final int PAGE_LIMIT = 15;
-    private BaseAdapter<Repository> repositoryListAdapter;
-    Realm realm;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
+        ButterKnife.bind(this);
+
         setSupportActionBar(toolbar);
 
-//        FloatingActionButton fab = findViewById(R.id.fab);
-//        fab.setOnClickListener(view -> Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                .setAction("Action", null).show());
+        // Init local storage access
+        LocalStorageUtil.init(this);
 
         // Init RecyclerView
-        rvRepositoryList = findViewById(R.id.rv_resource_list);
         repositoryListAdapter = new RepositoryRVAdapter();
         rvRepositoryList.setAdapter(repositoryListAdapter);
         rvRepositoryList.setNestedScrollingEnabled(false);
+
+        // Get data from WS
         repositoryListAdapter.addFooter();
         fetchRepositories();
 
         // Load more data at the end of the list
-        NestedScrollView nsContent = findViewById(R.id.ns_content);
         nsContent.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
             if (v.getChildAt(v.getChildCount() - 1) != null) {
                 if ((scrollY >= (v.getChildAt(v.getChildCount() - 1).getMeasuredHeight() - v.getMeasuredHeight())) &&
@@ -69,82 +69,73 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-
-        // Initialize Realm
-        Realm.init(this);
-        realm = Realm.getDefaultInstance();
     }
 
     // Get information from WS
     public void fetchRepositories() {
-        Gson gson = new GsonBuilder()
-                .setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
-                .create();
+        WSCalls.fetchRepositories(currentPage, PAGE_LIMIT, new WSCalls.WSCallListener() {
+            @Override
+            public void addProgress() {
+                rvRepositoryList.post(() -> repositoryListAdapter.addFooter());
+            }
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("https://api.github.com")
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .build();
+            @Override
+            public void removeProgress() {
+                rvRepositoryList.post(() -> repositoryListAdapter.removeFooter());
+            }
 
-        GithubRepoService githubRepoService = retrofit.create(GithubRepoService.class);
-        githubRepoService.listRepos(currentPage, PAGE_LIMIT).enqueue(repositoriesCallback);
-    }
+            @Override
+            public void lastPage() {
+                isLastPage = true;
+            }
 
-    Callback<List<Repository>> repositoriesCallback = new Callback<List<Repository>>() {
-        @Override
-        public void onResponse(Call<List<Repository>> call, Response<List<Repository>> response) {
-            List<Repository> repositories = response.body();
-            rvRepositoryList.post(() -> repositoryListAdapter.removeFooter());
-
-            if (!response.isSuccessful()) {
-                int responseCode = response.code();
-                if (responseCode == 400) {
-                    displayFetchError(view -> fetchRepositories());
-                }
+            @Override
+            public void stopLoading(boolean pageLoaded) {
+                if (pageLoaded)
+                    currentPage++;
                 isLoading = false;
-
-                return;
             }
 
-            if (repositories != null) {
-                if (repositories.size() > 0) {
-                    rvRepositoryList.post(() -> repositoryListAdapter.addAll(repositories));
-                    // Save repository information to realm
-                    realm.beginTransaction();
-                    realm.copyToRealmOrUpdate(repositories);
-                    realm.commitTransaction();
-                }
-
-                if (repositories.size() >= PAGE_LIMIT) {
-                    rvRepositoryList.post(() -> repositoryListAdapter.addFooter());
-                } else {
-                    isLastPage = true;
-                }
+            @Override
+            public void onSuccess(List<Repository> data) {
+                rvRepositoryList.post(() -> repositoryListAdapter.addAll(data));
             }
 
-            currentPage++;
-            isLoading = false;
+            @Override
+            public void onFetchError() {
+                displayFetchError(view -> {
+                    repositoryListAdapter.addFooter();
+                    fetchRepositories();
+                });
+            }
 
-            Log.d(TAG, "Code: " + response.code() + " Message: " + response.message());
-        }
-
-        @Override
-        public void onFailure(Call<List<Repository>> call, Throwable t) {
-            rvRepositoryList.post(() -> {
-                repositoryListAdapter.removeFooter();
-                // On network error fallback to local storage
-                if (repositoryListAdapter.getItemCount() == 0 && realm.where(Repository.class).count() > 0) {
-                    isLastPage = true;
-                    final RealmResults<Repository> localRepositories = realm.where(Repository.class).findAll();
-                    rvRepositoryList.post(() -> repositoryListAdapter.addAll(localRepositories));
-                } else {
-                    displayFetchError(view -> fetchRepositories());
-                }
-            });
-            isLoading = false;
-            Log.e(TAG, t.fillInStackTrace().toString() + " " + t.getMessage());
-        }
-    };
+            @Override
+            public void onError(Throwable t) {
+                rvRepositoryList.post(() -> {
+                    repositoryListAdapter.removeFooter();
+                    // On network error fallback to local storage
+                    if (repositoryListAdapter.getItemCount() == 0) {
+                        isLastPage = true;
+                        List<Repository> localRepositories = LocalStorageUtil.getRepositoryList();
+                        if (localRepositories.size() > 0) {
+                            rvRepositoryList.post(() -> repositoryListAdapter.addAll(localRepositories));
+                        } else {
+                            displayFetchError(view -> {
+                                repositoryListAdapter.addFooter();
+                                fetchRepositories();
+                            });
+                        }
+                    } else {
+                        displayFetchError(view -> {
+                            repositoryListAdapter.addFooter();
+                            fetchRepositories();
+                        });
+                    }
+                });
+                isLoading = false;
+            }
+        });
+    }
 
     protected void displayFetchError(View.OnClickListener onClickListener) {
         Snackbar.make(findViewById(android.R.id.content), getString(R.string.msg_data_fetch_error), Snackbar.LENGTH_LONG)
