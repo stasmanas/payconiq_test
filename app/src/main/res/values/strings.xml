@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Payconiq Test</string>
+    <string name="msg_data_fetch_error">Can not fetch data from network</string>
+    <string name="action_retry">Retry</string>
+
+    <!--Repository-->
+    <string name="repo_private">Private:</string>
+    <string name="repo_fork">Fork:</string>
+    <string name="repo_size">Size:</string>
+    <string name="repo_watchers_count">Watchers count:</string>
+    <string name="repo_owner">Owner:</string>
+
+    <string name="value_true">True</string>
+    <string name="value_false">False</string>
+</resources>
