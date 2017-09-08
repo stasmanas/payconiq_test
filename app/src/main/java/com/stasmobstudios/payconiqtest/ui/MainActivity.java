@@ -48,8 +48,9 @@ public class MainActivity extends AppCompatActivity {
 
         setSupportActionBar(toolbar);
 
-        // Init local storage access
+        // Init local storage and WS utils
         LocalStorageUtil.init(this);
+        WSCalls.init(getString(R.string.date_gson_format));
 
         // Init RecyclerView
         repositoryListAdapter = new RepositoryRVAdapter();

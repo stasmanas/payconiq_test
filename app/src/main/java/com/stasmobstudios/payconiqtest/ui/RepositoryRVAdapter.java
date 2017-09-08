@@ -1,5 +1,6 @@
 package com.stasmobstudios.payconiqtest.ui;
 
+import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +9,7 @@ import android.widget.TextView;
 
 import com.stasmobstudios.payconiqtest.R;
 import com.stasmobstudios.payconiqtest.model.Repository;
+import com.stasmobstudios.payconiqtest.util.DateUtil;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -41,23 +43,36 @@ public class RepositoryRVAdapter
     @Override
     protected void bindItemViewHolder(RecyclerView.ViewHolder viewHolder, int position) {
         ViewHolder holder = (ViewHolder) viewHolder;
+        Context context = holder.tvId.getContext();
+        String gsonDateFormat = context.getString(R.string.date_from_gson_format);
+        String displayDateFormat = context.getString(R.string.date_display_format);
         holder.repository = items.get(position);
         holder.tvId.setText(holder.repository.getId().toString());
-        holder.tvName.setText(holder.repository.getName());
-        holder.tvCreatedAt.setText(holder.repository.getCreatedAt());
-        holder.tvUpdatedAt.setText(holder.repository.getUpdatedAt());
+        holder.tvName.setText(holder.repository.getName() != null ? holder.repository.getName() : context.getString(R.string.value_not_available));
+        if (holder.repository.getCreatedAt() != null)
+            holder.tvCreatedAt.setText(DateUtil.dateToString(DateUtil.stringToDate(holder.repository.getCreatedAt(), gsonDateFormat), displayDateFormat));
+        else
+            holder.tvCreatedAt.setText(context.getString(R.string.value_not_available));
+        if (holder.repository.getUpdatedAt() != null)
+            holder.tvUpdatedAt.setText(DateUtil.dateToString(DateUtil.stringToDate(holder.repository.getUpdatedAt(), gsonDateFormat), displayDateFormat));
+        else
+            holder.tvUpdatedAt.setText(context.getString(R.string.value_not_available));
         holder.tvPrivate.setText(holder.repository.getPrivate() ? holder.tvPrivate.getContext().getString(R.string.value_true)
                 : holder.tvPrivate.getContext().getString(R.string.value_false));
         holder.tvFork.setText(holder.repository.getFork() ? holder.tvPrivate.getContext().getString(R.string.value_true)
                 : holder.tvPrivate.getContext().getString(R.string.value_false));
         holder.tvSize.setText(holder.repository.getSize().toString());
         holder.tvWatchersCount.setText(holder.repository.getWatchersCount().toString());
-        holder.tvUrl.setText(holder.repository.getUrl());
-        holder.tvForksUrl.setText(holder.repository.getForksUrl());
-        holder.tvKeysUrl.setText(holder.repository.getKeysUrl());
-        holder.tvCollaboratorsUrl.setText(holder.repository.getCollaboratorsUrl());
-        holder.tvOwnerId.setText(holder.repository.getOwner().getId().toString());
-        holder.tvOwnerLogin.setText(holder.repository.getOwner().getLogin());
+        holder.tvUrl.setText(holder.repository.getUrl() != null ? holder.repository.getUrl() : context.getString(R.string.value_not_available));
+        holder.tvForksUrl.setText(holder.repository.getForksUrl() != null ? holder.repository.getForksUrl() : context.getString(R.string.value_not_available));
+        holder.tvKeysUrl.setText(holder.repository.getKeysUrl() != null ? holder.repository.getKeysUrl() : context.getString(R.string.value_not_available));
+        holder.tvCollaboratorsUrl.setText(holder.repository.getCollaboratorsUrl() != null ? holder.repository.getCollaboratorsUrl() : context.getString(R.string.value_not_available));
+        if (holder.repository.getOwner() != null) {
+            holder.tvOwnerId.setText(holder.repository.getOwner().getId().toString());
+            holder.tvOwnerLogin.setText(holder.repository.getOwner().getLogin() != null ? holder.repository.getOwner().getLogin() : context.getString(R.string.value_not_available));
+        } else {
+            holder.tvOwnerLogin.setText(context.getString(R.string.value_not_available));
+        }
     }
 
     @Override
@@ -71,7 +86,7 @@ public class RepositoryRVAdapter
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
-        @BindView(R.id.tvId)
+        @BindView(R.id.tv_id)
         TextView tvId;
         @BindView(R.id.tv_name)
         TextView tvName;

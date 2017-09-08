@@ -20,13 +20,17 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class WSCalls {
     private static String TAG = WSCalls.class.getSimpleName();
-    private static Gson gson = new GsonBuilder()
-            .setDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
-            .create();
-    private static Retrofit retrofit = new Retrofit.Builder()
-            .baseUrl("https://api.github.com")
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .build();
+    private static Retrofit retrofit;
+
+    public static void init(String dateFormat) {
+        Gson gson = new GsonBuilder()
+                .setDateFormat(dateFormat)
+                .create();
+        retrofit = new Retrofit.Builder()
+                .baseUrl("https://api.github.com")
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .build();
+    }
 
     public static void fetchRepositories(int page, int pageLimit, WSCallListener wsCallListener) {
         GithubRepoService githubRepoService = retrofit.create(GithubRepoService.class);
