@@ -1,7 +1,6 @@
 package com.stasmobstudios.payconiqtest.ui;
 
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.AppCompatActivity;
@@ -18,6 +17,8 @@ import com.stasmobstudios.payconiqtest.model.Repository;
 
 import java.util.List;
 
+import io.realm.Realm;
+import io.realm.RealmResults;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -37,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     protected int currentPage = 1;
     public static final int PAGE_LIMIT = 15;
     private BaseAdapter<Repository> repositoryListAdapter;
+    Realm realm;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +69,10 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+        // Initialize Realm
+        Realm.init(this);
+        realm = Realm.getDefaultInstance();
     }
 
     // Get information from WS
@@ -101,8 +107,13 @@ public class MainActivity extends AppCompatActivity {
             }
 
             if (repositories != null) {
-                if (repositories.size() > 0)
+                if (repositories.size() > 0) {
                     rvRepositoryList.post(() -> repositoryListAdapter.addAll(repositories));
+                    // Save repository information to realm
+                    realm.beginTransaction();
+                    realm.copyToRealmOrUpdate(repositories);
+                    realm.commitTransaction();
+                }
 
                 if (repositories.size() >= PAGE_LIMIT) {
                     rvRepositoryList.post(() -> repositoryListAdapter.addFooter());
@@ -119,11 +130,18 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onFailure(Call<List<Repository>> call, Throwable t) {
-            rvRepositoryList.post(() -> repositoryListAdapter.removeFooter());
+            rvRepositoryList.post(() -> {
+                repositoryListAdapter.removeFooter();
+                // On network error fallback to local storage
+                if (repositoryListAdapter.getItemCount() == 0) {
+                    isLastPage = true;
+                    final RealmResults<Repository> localRepositories = realm.where(Repository.class).findAll();
+                    rvRepositoryList.post(() -> repositoryListAdapter.addAll(localRepositories));
+                } else
+                    displayFetchError(view -> fetchRepositories());
+            });
             isLoading = false;
-            t.printStackTrace();
             Log.e(TAG, t.fillInStackTrace().toString() + " " + t.getMessage());
-            displayFetchError(view -> fetchRepositories());
         }
     };
 

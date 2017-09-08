@@ -3,15 +3,20 @@ package com.stasmobstudios.payconiqtest.model;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+import io.realm.RealmObject;
+import io.realm.annotations.Ignore;
+import io.realm.annotations.PrimaryKey;
+
 /**
  * Created by Stanislovas Mickus on 07/09/2017.
  */
 
-public class Repository {
+public class Repository extends RealmObject {
 
+    @PrimaryKey
     @SerializedName("id")
     @Expose
-    private Integer id;
+    private Long id;
     @SerializedName("name")
     @Expose
     private String name;
@@ -167,7 +172,7 @@ public class Repository {
     private String svnUrl;
     @SerializedName("homepage")
     @Expose
-    private Object homepage;
+    private String homepage;
     @SerializedName("size")
     @Expose
     private Integer size;
@@ -200,7 +205,7 @@ public class Repository {
     private Integer forksCount;
     @SerializedName("mirror_url")
     @Expose
-    private Object mirrorUrl;
+    private String mirrorUrl;
     @SerializedName("open_issues_count")
     @Expose
     private Integer openIssuesCount;
@@ -217,11 +222,14 @@ public class Repository {
     @Expose
     private String defaultBranch;
 
-    public Integer getId() {
+    @Ignore
+    private int sessionId = 0;
+
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -633,11 +641,11 @@ public class Repository {
         this.svnUrl = svnUrl;
     }
 
-    public Object getHomepage() {
+    public String getHomepage() {
         return homepage;
     }
 
-    public void setHomepage(Object homepage) {
+    public void setHomepage(String homepage) {
         this.homepage = homepage;
     }
 
@@ -721,11 +729,11 @@ public class Repository {
         this.forksCount = forksCount;
     }
 
-    public Object getMirrorUrl() {
+    public String getMirrorUrl() {
         return mirrorUrl;
     }
 
-    public void setMirrorUrl(Object mirrorUrl) {
+    public void setMirrorUrl(String mirrorUrl) {
         this.mirrorUrl = mirrorUrl;
     }
 
@@ -768,5 +776,4 @@ public class Repository {
     public void setDefaultBranch(String defaultBranch) {
         this.defaultBranch = defaultBranch;
     }
-
 }

@@ -3,18 +3,23 @@ package com.stasmobstudios.payconiqtest.model;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 
+import io.realm.RealmObject;
+import io.realm.annotations.Ignore;
+import io.realm.annotations.PrimaryKey;
+
 /**
  * Created by Stanislovas Mickus on 07/09/2017.
  */
 
-public class Owner {
+public class Owner extends RealmObject {
 
     @SerializedName("login")
     @Expose
     private String login;
+    @PrimaryKey
     @SerializedName("id")
     @Expose
-    private Integer id;
+    private Long id;
     @SerializedName("avatar_url")
     @Expose
     private String avatarUrl;
@@ -61,6 +66,9 @@ public class Owner {
     @Expose
     private Boolean siteAdmin;
 
+    @Ignore
+    private int sessionId = 0;
+
     public String getLogin() {
         return login;
     }
@@ -69,11 +77,11 @@ public class Owner {
         this.login = login;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -196,5 +204,4 @@ public class Owner {
     public void setSiteAdmin(Boolean siteAdmin) {
         this.siteAdmin = siteAdmin;
     }
-
 }
