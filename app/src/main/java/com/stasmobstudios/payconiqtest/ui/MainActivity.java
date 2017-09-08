@@ -133,12 +133,13 @@ public class MainActivity extends AppCompatActivity {
             rvRepositoryList.post(() -> {
                 repositoryListAdapter.removeFooter();
                 // On network error fallback to local storage
-                if (repositoryListAdapter.getItemCount() == 0) {
+                if (repositoryListAdapter.getItemCount() == 0 && realm.where(Repository.class).count() > 0) {
                     isLastPage = true;
                     final RealmResults<Repository> localRepositories = realm.where(Repository.class).findAll();
                     rvRepositoryList.post(() -> repositoryListAdapter.addAll(localRepositories));
-                } else
+                } else {
                     displayFetchError(view -> fetchRepositories());
+                }
             });
             isLoading = false;
             Log.e(TAG, t.fillInStackTrace().toString() + " " + t.getMessage());
